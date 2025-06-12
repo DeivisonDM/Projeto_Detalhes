@@ -1,0 +1,120 @@
+Importação das Bibliotecas
+python
+CopiarEditar
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import warnings
+import os
+from datetime import datetime
+
+Gerar Dados Simulados
+python
+CopiarEditar
+np.random.seed(42)
+datas = pd.date_range(start="2023-01-01", periods=100, freq='W')
+vendas = np.random.poisson(lam=200, size=100) + 10 * np.sin(np.linspace(0, 10, 100))
+df = pd.DataFrame({'Data': datas, 'Vendas': vendas})
+df.set_index('Data', inplace=True)
+
+Análise Exploratória
+python
+CopiarEditar
+plt.figure(figsize=(10, 4))
+plt.plot(df.index, df['Vendas'], label='Vendas')
+plt.title("Histórico de Vendas")
+plt.xlabel("Data")
+plt.ylabel("Unidades Vendidas")
+plt.grid()
+plt.legend()
+plt.tight_layout()
+
+
+Dividir os Dados em Treinamento e Teste
+python
+CopiarEditar
+train = df.iloc[:-10]
+test = df.iloc[-10:]
+
+Treinar o Modelo ARIMA
+python
+CopiarEditar
+model = ARIMA(train['Vendas'], order=(2, 1, 2))
+model_fit = model.fit()
+forecast = model_fit.forecast(steps=10)
+
+Avaliar o Modelo
+python
+CopiarEditar
+mae = mean_absolute_error(test['Vendas'], forecast)
+rmse = np.sqrt(mean_squared_error(test['Vendas'], forecast))
+
+print(f"\nMAE: {mae:.2f}")
+print(f"RMSE: {rmse:.2f}")
+
+Visualizar a Previsão
+python
+CopiarEditar
+plt.figure(figsize=(10, 4))
+plt.plot(train.index, train['Vendas'], label='Treinamento')
+plt.plot(test.index, test['Vendas'], label='Real')
+plt.plot(test.index, forecast, label='Previsto', linestyle='--')
+plt.title("Previsão de Vendas com ARIMA")
+plt.xlabel("Data")
+plt.ylabel("Unidades")
+plt.grid()
+plt.legend()
+plt.tight_layout()
+plt.savefig("output/previsao_vendas.png")
+plt.show()
+
+
+Alerta de Reposição de Estoque
+python
+CopiarEditar
+estoque_atual = 500
+demanda_prevista = sum(forecast)
+
+print("\nEstoque Atual:", estoque_atual)
+print("Demanda Prevista (10 semanas):", round(demanda_prevista, 2))
+
+if estoque_atual < demanda_prevista:
+    print("⚠️ ALERTA: Estoque insuficiente para atender à demanda prevista!")
+    alerta = "RUPTURA DE ESTOQUE"
+else:
+    print("✅ Estoque suficiente para o período previsto.")
+    alerta = "ESTOQUE OK"
+
+Exportar Resultados
+python
+CopiarEditar
+df_forecast = pd.DataFrame({
+    'Data': test.index,
+    'Demanda_Prevista': forecast,
+    'Demanda_Real': test['Vendas'].values
+})
+df_forecast['Alerta'] = alerta
+df_forecast.to_excel("output/previsao_demandas.xlsx", index=False)
+
+log = {
+    "Data_Execucao": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+    "Estoque_Atual": [estoque_atual],
+    "Demanda_Prevista_Total": [round(demanda_prevista, 2)],
+    "MAE": [round(mae, 2)],
+    "RMSE": [round(rmse, 2)],
+    "Status_Alerta": [alerta]
+}
+df_log = pd.DataFrame(log)
+df_log.to_csv("output/log_execucao.csv", index=False)
+
+print("\n✅ Resultados salvos na pasta 'output'.")
+
+
+
+
+
+
+
+
