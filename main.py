@@ -3,32 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-import warnings
-import os
 from datetime import datetime
+from gerar_dados import gerar_dados
 
 
-np.random.seed(42)
-datas = pd.date_range(start="2023-01-01", periods=100, freq='W')
-vendas = np.random.poisson(lam=200, size=100) + 10 * np.sin(np.linspace(0, 10, 100))
-df = pd.DataFrame({'Data': datas, 'Vendas': vendas})
-df.set_index('Data', inplace=True)
-
-
-plt.figure(figsize=(10, 4))
-plt.plot(df.index, df['Vendas'], label='Vendas')
-plt.title("Histórico de Vendas")
-plt.xlabel("Data")
-plt.ylabel("Unidades Vendidas")
-plt.grid()
-plt.legend()
-plt.tight_layout()
-
-
+df = pd.read_csv("output/dados_vendas.csv")
 
 train = df.iloc[:-10]
 test = df.iloc[-10:]
-
 
 model = ARIMA(train['Vendas'], order=(2, 1, 2))
 model_fit = model.fit()
@@ -55,8 +37,6 @@ plt.tight_layout()
 plt.savefig("output/previsao_vendas.png")
 plt.show()
 
-
-
 estoque_atual = 500
 demanda_prevista = sum(forecast)
 
@@ -77,7 +57,7 @@ df_forecast = pd.DataFrame({
     'Demanda_Real': test['Vendas'].values
 })
 df_forecast['Alerta'] = alerta
-df_forecast.to_excel("output/previsao_demandas.xlsx", index=False)
+df_forecast.to_csv("output/previsao_demandas.csv", index=False)
 
 log = {
     "Data_Execucao": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
